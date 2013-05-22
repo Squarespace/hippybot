@@ -48,7 +48,7 @@ class HipChatApi(object):
         if method in self._gets[self._name]:
             r = requests.get(url, params=params)
         elif method in self._posts[self._name]:
-            r = requests.post(url, params=params)
+            r = requests.post(url, data=params)
         return json.loads(r.content)
 
     def __getattr__(self, attr_name):
