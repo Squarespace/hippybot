@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import os.path
 import sys
 import codecs
 import time
@@ -311,27 +312,37 @@ def control():
     if cmd not in ('start', 'stop', 'restart'):
         parser.error("Command must be one of start, stop, restart")
         
+    pid = options.pid
+    if not pid:
+        pid = os.path.abspath(os.path.join(os.path.dirname(
+            options.config_path) if options.config_path else os.getcwd(), 'hippybot.pid'))
+
+    runner = HippyDaemon(pid)
+
+    # if stop, don't bother requiring config
+    if cmd == 'stop':
+        ret = runner.stop()
+        return 0 if ret is None else ret
+
+
+    # handle config
     if not options.config_path:
         parser.error('ERROR: Missing config file path')
 
     config = ConfigParser()
     config.readfp(codecs.open(os.path.abspath(options.config_path), "r", "utf8"))
 
-    pid = options.pid
-    if not pid:
-        pid = os.path.abspath(os.path.join(os.path.dirname(
-            options.config_path), 'hippybot.pid'))
-
-    runner = HippyDaemon(pid)
     runner.config = config
-    if cmd == 'stop':
-        ret = runner.stop()
-        return 0 if ret is None else ret
-    elif cmd == 'start':
+
+    if cmd == 'start':
         ret = runner.start()
         return 0 if ret is None else ret
     elif cmd == 'restart':
         ret = runner.stop()
+        try:
+            os.remove(pid)
+        except OSError:
+            logging.warning("Could not remove pid file %s" % pid)
         if ret is not None:
             return ret
         ret = runner.start()
