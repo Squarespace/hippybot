@@ -27,7 +27,7 @@ setup(
         'plugins': open('extras_requirements.txt').readlines(),
     },
     entry_points={
-        'console_scripts': ['hippybot = hippybot.bot:main',],
+        'console_scripts': ['hippybot = hippybot.bot:main', 'hippybotctl = hippybot.bot:control'],
     },
     license='BSD'
 )

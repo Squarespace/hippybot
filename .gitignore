@@ -1,3 +1,4 @@
 hippybot.conf
 hippybot.pid
+hippybot.egg-info
 *.pyc

@@ -296,6 +296,49 @@ class HippyDaemon(Daemon):
         else:
             return 0
 
+def control():
+    import logging
+    logging.basicConfig()
+
+    parser = OptionParser(usage="""usage: %prog [options] start|stop|restart""")
+
+    parser.add_option("-c", "--config", dest="config_path", help="Config file path")
+    parser.add_option("-p", "--pid", dest="pid", help="PID file location")
+    (options, pos_args) = parser.parse_args()
+
+    # commands are start, stop, restart
+    cmd = pos_args[0] if len(pos_args) else None
+    if cmd not in ('start', 'stop', 'restart'):
+        parser.error("Command must be one of start, stop, restart")
+        
+    if not options.config_path:
+        parser.error('ERROR: Missing config file path')
+
+    config = ConfigParser()
+    config.readfp(codecs.open(os.path.abspath(options.config_path), "r", "utf8"))
+
+    pid = options.pid
+    if not pid:
+        pid = os.path.abspath(os.path.join(os.path.dirname(
+            options.config_path), 'hippybot.pid'))
+
+    runner = HippyDaemon(pid)
+    runner.config = config
+    if cmd == 'stop':
+        ret = runner.stop()
+        return 0 if ret is None else ret
+    elif cmd == 'start':
+        ret = runner.start()
+        return 0 if ret is None else ret
+    elif cmd == 'restart':
+        ret = runner.stop()
+        if ret is not None:
+            return ret
+        ret = runner.start()
+        return 0 if ret is None else ret
+    else:
+        parser.error("Command must be one of start, stop, restart")
+
 def main():
     import logging
     logging.basicConfig()
