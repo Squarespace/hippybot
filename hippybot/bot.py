@@ -168,7 +168,6 @@ class HippyBot(JabberBot):
         nickname = id.getResource()
         user = self._user_cache.get(nickname)
         if not user:
-            import pdb; pdb.set_trace()
             user_id = self._participant_cache.get(nickname)
             if not user_id:
                 participants = self.api.rooms.show({'room_id' : id.getNode().split('_', 1)[1], 'format': 'json'}).get('room', {}).get('participants', [])
