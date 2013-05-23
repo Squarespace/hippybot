@@ -46,7 +46,7 @@ class HippyBot(JabberBot):
     _last_message = ''
     _last_send_time = time.time()
     _restart = False
-    _participant_cache = {}
+    _participant_cache = None
     _user_cache = {}
 
     def __init__(self, config):
@@ -164,17 +164,21 @@ class HippyBot(JabberBot):
                 self.send_simple_reply(mess, ret)
                 return ret
 
+    def _get_participant_cache(self):
+        if self._participant_cache is not None:
+            return self._participants_cache
+        self._participant_cache = {}
+        for jid_stripped, props in self.roster.getRawRoster().iteritems():
+            res_name = props.get('name')
+            self._participant_cache[res_name] = jid_stripped.split('@', 1)[0].split('_', 1)[1]
+        return self._participant_cache
+
     def get_user(self, id):
         nickname = id.getResource()
         user = self._user_cache.get(nickname)
         if not user:
-            user_id = self._participant_cache.get(nickname)
-            if not user_id:
-                participants = self.api.rooms.show({'room_id' : id.getNode().split('_', 1)[1], 'format': 'json'}).get('room', {}).get('participants', [])
-                for item in participants:
-                    self._participant_cache[item.get('name')] = item.get('user_id')
-                user_id = self._participant_cache.get(nickname)
             user = Thing()
+            user_id = self._get_participant_cache().get(nickname)
             if user_id:
                 user_json = self.api.users.show({'user_id': user_id, 'format': 'json'})
                 for k,v in user_json.get('user', {}).iteritems():
@@ -383,7 +387,7 @@ def control():
 
 def main():
     import logging
-    logging.basicConfig()
+    logging.basicConfig(level='INFO')
 
     parser = OptionParser(usage="""usage: %prog [options]""")
 
