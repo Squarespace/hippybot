@@ -5,8 +5,8 @@ def directcmd(func):
     @wraps(func)
     def wrapper(self, origin, args):
         message = func(self, origin, args)
-        username = unicode(origin.getFrom()).split('/')[1].replace(" ","")
-        return u'@%s %s' % (username, message)
+        user = self.bot.get_user(origin.getFrom())
+        return u'@%s %s' % (user.mention_name, message)
     return botcmd(wrapper)
 
 def contentcmd(*args, **kwargs):

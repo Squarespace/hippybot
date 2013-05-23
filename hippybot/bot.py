@@ -21,6 +21,9 @@ RESERVED_COMMANDS = (
     'api',
 )
 
+class Thing:
+    pass
+
 def do_import(name):
     """Helper function to import a module given it's full path and return the
     module object.
@@ -43,6 +46,8 @@ class HippyBot(JabberBot):
     _last_message = ''
     _last_send_time = time.time()
     _restart = False
+    _participant_cache = {}
+    _user_cache = {}
 
     def __init__(self, config):
         self._config = config
@@ -158,6 +163,25 @@ class HippyBot(JabberBot):
             if ret:
                 self.send_simple_reply(mess, ret)
                 return ret
+
+    def get_user(self, id):
+        nickname = id.getResource()
+        user = self._user_cache.get(nickname)
+        if not user:
+            import pdb; pdb.set_trace()
+            user_id = self._participant_cache.get(nickname)
+            if not user_id:
+                participants = self.api.rooms.show({'room_id' : id.getNode().split('_', 1)[1], 'format': 'json'}).get('room', {}).get('participants', [])
+                for item in participants:
+                    self._participant_cache[item.get('name')] = item.get('user_id')
+                user_id = self._participant_cache.get(nickname)
+            user = Thing()
+            if user_id:
+                user_json = self.api.users.show({'user_id': user_id, 'format': 'json'})
+                for k,v in user_json.get('user', {}).iteritems():
+                    setattr(user, k, v)
+            self._user_cache[id] = user
+        return user
 
     def join_room(self, room, username=None, password=None):
         """Overridden from JabberBot to provide history limiting.
