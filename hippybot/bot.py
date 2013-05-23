@@ -174,6 +174,7 @@ class HippyBot(JabberBot):
             for k, v in item.iteritems():
                 setattr(room, k, v)
             self._room_cache[channel] = room
+        return self._room_cache
 
     def room_for_channel(self, channel):
         return self.room_cache().get(channel)
