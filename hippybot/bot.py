@@ -166,7 +166,7 @@ class HippyBot(JabberBot):
 
     def _get_participant_cache(self):
         if self._participant_cache is not None:
-            return self._participants_cache
+            return self._participant_cache
         self._participant_cache = {}
         for jid_stripped, props in self.roster.getRawRoster().iteritems():
             res_name = props.get('name')
