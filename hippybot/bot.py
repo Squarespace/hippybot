@@ -298,9 +298,6 @@ class HippyDaemon(Daemon):
             return 0
 
 def control():
-    import logging
-    logging.basicConfig()
-
     parser = OptionParser(usage="""usage: %prog [options] start|stop|restart""")
 
     parser.add_option("-c", "--config", dest="config_path", help="Config file path")
@@ -317,6 +314,19 @@ def control():
         pid = os.path.abspath(os.path.join(os.path.dirname(
             options.config_path) if options.config_path else os.getcwd(), 'hippybot.pid'))
 
+    config = ConfigParser()
+    if options.config_path:
+        config.readfp(codecs.open(os.path.abspath(options.config_path), "r", "utf8"))
+
+    # set up logging
+    import logging
+    logargs = { 'level': 'INFO' }
+    if config.has_section('logging'):
+        for opt in ('filename', 'filemode', 'format', 'datefmt', 'level'):
+            if config.has_option('logging', opt):
+                logargs[opt] = config.get('logging', opt)
+    logging.basicConfig(**logargs)
+
     runner = HippyDaemon(pid)
 
     # if stop, don't bother requiring config
@@ -325,12 +335,10 @@ def control():
         return 0 if ret is None else ret
 
 
-    # handle config
+    # now we require config
     if not options.config_path:
-        parser.error('ERROR: Missing config file path')
+        parser.error('Missing config file path')
 
-    config = ConfigParser()
-    config.readfp(codecs.open(os.path.abspath(options.config_path), "r", "utf8"))
 
     runner.config = config
 
