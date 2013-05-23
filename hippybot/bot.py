@@ -164,7 +164,6 @@ class HippyBot(JabberBot):
                 return ret
 
     _room_cache = None
-    @property
     def room_cache(self):
         if self._room_cache is not None:
             return self._room_cache
@@ -177,10 +176,9 @@ class HippyBot(JabberBot):
             self._room_cache[channel] = room
 
     def room_for_channel(self, channel):
-        return self.room_cache.get(channel)
+        return self.room_cache().get(channel)
 
     _participant_cache = None
-    @property
     def participant_cache(self):
         if self._participant_cache is not None:
             return self._participant_cache
@@ -195,12 +193,12 @@ class HippyBot(JabberBot):
         user = self._user_cache.get(nickname)
         if not user:
             user = Thing()
-            user_id = self.participant_cache.get(nickname)
+            user_id = self.participant_cache().get(nickname)
             if user_id:
                 user_json = self.api.users.show({'user_id': user_id, 'format': 'json'})
                 for k,v in user_json.get('user', {}).iteritems():
                     setattr(user, k, v)
-            self._user_cache[id] = user
+            self._user_cache[nickname] = user
         return user
 
     def join_room(self, room, username=None, password=None):
