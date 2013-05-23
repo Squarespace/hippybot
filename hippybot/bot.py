@@ -46,7 +46,6 @@ class HippyBot(JabberBot):
     _last_message = ''
     _last_send_time = time.time()
     _restart = False
-    _participant_cache = None
     _user_cache = {}
 
     def __init__(self, config):
@@ -164,7 +163,25 @@ class HippyBot(JabberBot):
                 self.send_simple_reply(mess, ret)
                 return ret
 
-    def _get_participant_cache(self):
+    _room_cache = None
+    @property
+    def room_cache(self):
+        if self._room_cache is not None:
+            return self._room_cache
+        self._room_cache = {}
+        for item in self.api.rooms.list().get('rooms', []):
+            channel = item.get('xmpp_jid').split('@', 1)[0].split('_', 1)[1]
+            room = Thing()
+            for k, v in item.iteritems():
+                setattr(room, k, v)
+            self._room_cache[channel] = room
+
+    def room_for_channel(self, channel):
+        return self.room_cache.get(channel)
+
+    _participant_cache = None
+    @property
+    def participant_cache(self):
         if self._participant_cache is not None:
             return self._participant_cache
         self._participant_cache = {}
@@ -178,7 +195,7 @@ class HippyBot(JabberBot):
         user = self._user_cache.get(nickname)
         if not user:
             user = Thing()
-            user_id = self._get_participant_cache().get(nickname)
+            user_id = self.participant_cache.get(nickname)
             if user_id:
                 user_json = self.api.users.show({'user_id': user_id, 'format': 'json'})
                 for k,v in user_json.get('user', {}).iteritems():
