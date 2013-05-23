@@ -99,6 +99,8 @@ class HippyBot(JabberBot):
             'respond_to_all', False
             )
         to = True
+        if not isinstance(mess, basestring):
+            mess = mess.getBody() or ''
         if (respond_to_all and mess.startswith('@all ')):
             mess = mess[5:]
         elif mess.startswith(self._at_short_name):
