@@ -84,11 +84,8 @@ class HippyBot(JabberBot):
     def from_bot(self, mess):
         """Helper method to test if a message was sent from this bot.
         """
-        if unicode(mess.getFrom()).endswith("/%s" % (
-                        self._config['connection']['nickname'],)):
-            return True
-        else:
-            return False
+        return unicode(mess.getFrom()).endswith("/%s" % (
+                        self._config['connection']['nickname'],))
 
     def to_bot(self, mess):
         """Helper method to test if a message was directed at this bot.
