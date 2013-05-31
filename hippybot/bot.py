@@ -110,20 +110,24 @@ class HippyBot(JabberBot):
         respond_to_all = self._config.get('hipchat', {}).get(
             'respond_to_all', False
             )
-        if not mess.getType() != 'groupchat':
+        if not mess.getType() == 'groupchat':
             return True, (mess.getBody() or '')
-        to = True
+        to = False
         if not isinstance(mess, basestring):
-            mess = mess.getBody() or ''
+            mess = mess.getBody() or u''
 
-        if (respond_to_all and mess.startswith('@all ')):
-            mess = mess[5:]
-        elif mess.startswith(unicode(self._at_short_name)):
-            mess = mess[len(self._at_short_name):]
-        elif mess.lower().startswith(unicode(self._at_name.lower())):
-            mess = mess[len(self._at_name):]
-        else:
-            to = False
+        names = set([
+            u'@all',
+            unicode(self._at_short_name),
+            unicode(self._at_name.lower()),
+        ])
+
+        for n in names:
+            if mess.startswith(n):
+                to = True
+                mess = mess[len(n):]
+                break
+
         return to, mess
 
     def send_message(self, mess):
