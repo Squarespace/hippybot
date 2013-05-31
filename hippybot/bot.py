@@ -151,6 +151,7 @@ class HippyBot(JabberBot):
             return
 
         at_msg, message = self.to_bot(mess)
+        mess.to_bot = at_msg
 
         if len(self._all_msg_handlers) > 0:
             for handler in self._all_msg_handlers:
