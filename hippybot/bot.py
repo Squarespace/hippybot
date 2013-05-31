@@ -112,16 +112,19 @@ class HippyBot(JabberBot):
         respond_to_all = self._config.get('hipchat', {}).get(
             'respond_to_all', False
             )
-        if not mess.getType() == 'groupchat':
+        # If not a groupchat msg, it's a chat msg, and thus could only
+        # be addressed directly to the bot.
+        if not mess.getType() != 'groupchat':
             return True, (mess.getBody() or '')
+
         to = False
         if not isinstance(mess, basestring):
-            mess = mess.getBody() or u''
+            mess = unicode(mess.getBody()) or u''
 
         names = set([
-            u'@all',
+            u'@all ',
             unicode(self._at_short_name),
-            unicode(self._at_name.lower()),
+            unicode(self._at_name)
         ])
 
         for n in names:
