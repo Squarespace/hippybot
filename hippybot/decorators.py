@@ -38,7 +38,8 @@ def match(regex=None):
             else:
                 m = re.search(regex, msg.getBody())
                 if m:
-                    return fn(ctx, msg.getFrom().getResource(), msg.getBody(), match=m, **kwargs)
+                    user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
+                    return fn(ctx, user, msg.getBody(), match=m, **kwargs)
                 return
         return __match
 
@@ -58,7 +59,8 @@ def status(color='purple', regex=None):
             else:
                 m = re.search(regex, msg.getBody())
                 if m:
-                    html = fn(ctx, msg.getFrom().getResource(), msg.getBody(), match=m, **kwargs)
+                    user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
+                    html = fn(ctx, user, msg.getBody(), match=m, **kwargs)
                     message_room(ctx, msg, html, color=color)
                 return
         return __status
