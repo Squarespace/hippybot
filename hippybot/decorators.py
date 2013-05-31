@@ -11,6 +11,15 @@ def directcmd(func):
     return botcmd(wrapper)
 
 
+def direct(fn):
+    @wraps(fn)
+    def _direct(ctx, msg, *args, **kwargs):
+        if ctx.bot.to_bot(msg):
+            return fn(ctx, msg, *args, **kwargs)
+        return
+    return _direct
+
+
 def contentcmd(*args, **kwargs):
     """Decorator for bot commentary"""
 
@@ -36,7 +45,7 @@ def match(regex=None):
             if not regex or not msg or not msg.getBody() or ctx.bot.from_bot(msg):
                 return
             else:
-                m = re.search(regex, msg.getBody())
+                m = re.search(regex, msg.getBody(), re.IGNORECASE)
                 if m:
                     user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
                     return fn(ctx, user, msg.getBody(), match=m, **kwargs)
@@ -57,7 +66,7 @@ def status(color='purple', regex=None):
             if not regex or not msg or not msg.getBody() or ctx.bot.from_bot(msg):
                 return
             else:
-                m = re.search(regex, msg.getBody())
+                m = re.search(regex, msg.getBody(), re.IGNORECASE)
                 if m:
                     user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
                     html = fn(ctx, user, msg.getBody(), match=m, **kwargs)
