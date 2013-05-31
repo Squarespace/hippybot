@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps, update_wrapper
 from jabberbot import botcmd
 import re
 
@@ -21,7 +21,7 @@ def direct(fn):
         if to:
             return fn(ctx, msg, *args, **kwargs)
         return
-    return _direct
+    return update_wrapper(_direct, fn)
 
 
 def contentcmd(*args, **kwargs):
@@ -42,7 +42,7 @@ def match(regex=None):
     """Decorator for bot commentary that matches a regular expression"""
     def _match(fn):
         setattr(fn, '_jabberbot_content_command', True)
-        setattr(fn, '_jabberbot_command_name', match.__name__)
+        setattr(fn, '_jabberbot_command_name', fn.__name__)
 
         @wraps(fn)
         def __match(ctx, msg, *args, **kwargs):
@@ -54,7 +54,7 @@ def match(regex=None):
                     user = '@%s' % ctx.bot.get_sending_user(msg).mention_name
                     return fn(ctx, user, msg.getBody(), match=m, **kwargs)
                 return
-        return __match
+        return update_wrapper(__match, fn)
 
     return _match
 
@@ -63,7 +63,7 @@ def status(color='purple', regex=None):
     """Decorator for bot commentary that submits a status message of html with color"""
     def _status(fn):
         setattr(fn, '_jabberbot_content_command', True)
-        setattr(fn, '_jabberbot_command_name', status.__name__)
+        setattr(fn, '_jabberbot_command_name', fn.__name__)
 
         @wraps(fn)
         def __status(ctx, msg, *args, **kwargs):
