@@ -14,6 +14,7 @@ from lazy_reload import lazy_reload
 
 from hippybot.hipchat import HipChatApi
 from hippybot.daemon.daemon import Daemon
+from hippybot.lookup import Lookup, USER_DOMAIN, ROOM_DOMAIN
 
 # List of bot commands that can't be registered, as they would conflict with
 # internal HippyBot methods
@@ -46,17 +47,17 @@ class HippyBot(JabberBot):
     _last_message = ''
     _last_send_time = time.time()
     _restart = False
-    _user_cache = {}
+    _lookup = None
 
     def __init__(self, config):
         self._config = config
 
         prefix = config['connection']['username'].split('_')[0]
         self._channels = [u"%s_%s@%s" % (prefix, c.strip().lower().replace(' ',
-                '_'), 'conf.hipchat.com') for c in
+                '_'), ROOM_DOMAIN) for c in
                 config['connection']['channels'].split('\n')]
 
-        username = u"%s@chat.hipchat.com" % (config['connection']['username'],)
+        username = u"%s@%s" % (config['connection']['username'], USER_DOMAIN)
         # Set this here as JabberBot sets username as private
         self._username = username
         super(HippyBot, self).__init__(username=username,
@@ -64,12 +65,14 @@ class HippyBot(JabberBot):
         # Make sure we don't timeout after 150s
         self.PING_FREQUENCY = 50
 
+
         for channel in self._channels:
             self.join_room(channel, config['connection']['nickname'])
 
-        self._at_name = u"@%s " % (config['connection']['nickname'].replace(" ",""),)
-        self._at_short_name = u"@%s " % (config['connection']['nickname']
-                                        .split(' ')[0].lower(),)
+        self._lookup = Lookup(self)
+
+        self._at_name = u"@%s " % config['connection']['nickname'].replace(' ', '')
+        self._at_short_name = self._at_name.lower()
 
         plugins = config.get('plugins', {}).get('load', [])
         if plugins:
@@ -81,11 +84,23 @@ class HippyBot(JabberBot):
 
         self.log.setLevel(logging.INFO)
 
+    def is_groupchat_message(self, mess):
+        return mess.getType() == 'groupchat' 
+
+    def get_sending_room(self, mess):
+        return self._lookup.get_sending_room(mess.getFrom())
+
+    def get_sending_user(self, mess):
+        return self._lookup.get_sending_user(mess.getFrom())
+
+    def bot_user(self):
+        return self._lookup.get_sending_user(self._username)
+
     def from_bot(self, mess):
         """Helper method to test if a message was sent from this bot.
         """
-        return unicode(mess.getFrom()).endswith("/%s" % (
-                        self._config['connection']['nickname'],))
+        sender = self._lookup.get_sending_user(mess.getFrom())
+        return sender is not None and sender.xmpp_jid == self._username
 
     def to_bot(self, mess):
         """Helper method to test if a message was directed at this bot.
@@ -95,14 +110,15 @@ class HippyBot(JabberBot):
         respond_to_all = self._config.get('hipchat', {}).get(
             'respond_to_all', False
             )
+        if not mess.getType() != 'groupchat':
+            return True, (mess.getBody() or '')
         to = True
         if not isinstance(mess, basestring):
             mess = mess.getBody() or ''
         if (respond_to_all and mess.startswith('@all ')):
             mess = mess[5:]
-        elif mess.startswith(self._at_short_name):
-            mess = mess[len(self._at_short_name):]
-        elif mess.lower().startswith(self._at_name.lower()):
+
+        elif mess.startswith(self._at_name):
             mess = mess[len(self._at_name):]
         else:
             to = False
@@ -125,7 +141,7 @@ class HippyBot(JabberBot):
         if not message:
             return
 
-        at_msg, message = self.to_bot(message)
+        at_msg, message = self.to_bot(mess)
 
         if len(self._all_msg_handlers) > 0:
             for handler in self._all_msg_handlers:
@@ -161,45 +177,6 @@ class HippyBot(JabberBot):
             if ret:
                 self.send_simple_reply(mess, ret)
                 return ret
-
-    _room_cache = None
-    def room_cache(self):
-        if self._room_cache is not None:
-            return self._room_cache
-        self._room_cache = {}
-        for item in self.api.rooms.list().get('rooms', []):
-            channel = item.get('xmpp_jid').split('@', 1)[0].split('_', 1)[1]
-            room = Thing()
-            for k, v in item.iteritems():
-                setattr(room, k, v)
-            self._room_cache[channel] = room
-        return self._room_cache
-
-    def room_for_channel(self, channel):
-        return self.room_cache().get(channel)
-
-    _participant_cache = None
-    def participant_cache(self):
-        if self._participant_cache is not None:
-            return self._participant_cache
-        self._participant_cache = {}
-        for jid_stripped, props in self.roster.getRawRoster().iteritems():
-            res_name = props.get('name')
-            self._participant_cache[res_name] = jid_stripped.split('@', 1)[0].split('_', 1)[1]
-        return self._participant_cache
-
-    def get_user(self, id):
-        nickname = id.getResource()
-        user = self._user_cache.get(nickname)
-        if not user:
-            user = Thing()
-            user_id = self.participant_cache().get(nickname)
-            if user_id:
-                user_json = self.api.users.show({'user_id': user_id, 'format': 'json'})
-                for k,v in user_json.get('user', {}).iteritems():
-                    setattr(user, k, v)
-            self._user_cache[nickname] = user
-        return user
 
     def join_room(self, room, username=None, password=None):
         """Overridden from JabberBot to provide history limiting.

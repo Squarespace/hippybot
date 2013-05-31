@@ -6,8 +6,11 @@ def directcmd(func):
     @wraps(func)
     def wrapper(self, origin, args):
         message = func(self, origin, args)
-        user = self.bot.get_user(origin.getFrom())
-        return u'@%s %s' % (user.mention_name, message)
+        if origin.getType() == 'groupchat':
+            user = self.bot.get_sending_user(origin)
+            return u'@%s %s' % (user.mention_name, message)
+        else:
+            return message
     return botcmd(wrapper)
 
 
