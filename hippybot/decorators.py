@@ -17,7 +17,8 @@ def directcmd(func):
 def direct(fn):
     @wraps(fn)
     def _direct(ctx, msg, *args, **kwargs):
-        if ctx.bot.to_bot(msg):
+        to, _ = ctx.bot.to_bot(msg)
+        if to:
             return fn(ctx, msg, *args, **kwargs)
         return
     return _direct

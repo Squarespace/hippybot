@@ -115,10 +115,12 @@ class HippyBot(JabberBot):
         to = True
         if not isinstance(mess, basestring):
             mess = mess.getBody() or ''
+
         if (respond_to_all and mess.startswith('@all ')):
             mess = mess[5:]
-
-        elif mess.startswith(self._at_name):
+        elif mess.startswith(unicode(self._at_short_name)):
+            mess = mess[len(self._at_short_name):]
+        elif mess.lower().startswith(unicode(self._at_name.lower())):
             mess = mess[len(self._at_name):]
         else:
             to = False
