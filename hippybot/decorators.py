@@ -51,7 +51,7 @@ def match(regex=None):
             else:
                 m = re.search(regex, msg.getBody(), re.IGNORECASE)
                 if m:
-                    user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
+                    user = '@%s' % ctx.bot.get_sending_user(msg).mention_name
                     return fn(ctx, user, msg.getBody(), match=m, **kwargs)
                 return
         return __match
@@ -72,7 +72,7 @@ def status(color='purple', regex=None):
             else:
                 m = re.search(regex, msg.getBody(), re.IGNORECASE)
                 if m:
-                    user = '@%s' % ctx.bot.get_user(msg.getFrom()).mention_name
+                    user = '@%s' % ctx.bot.get_sending_user(msg).mention_name
                     html = fn(ctx, user, msg.getBody(), match=m, **kwargs)
                     message_room(ctx, msg, html, color=color)
                 return
@@ -83,7 +83,7 @@ def status(color='purple', regex=None):
 
 def message_room(ctx, msg_obj, content, format='html', color='purple'):
     channel = unicode(msg_obj.getFrom()).split('/')[0].split('@')[0].split('_', 1)[1]
-    room_id = ctx.bot.room_for_channel(channel).room_id if ctx.bot.room_for_channel(channel) else channel
+    room_id = sending_room = ctx.bot.get_sending_room(msg_obj).room_id
     apiargs = {
         'room_id': room_id,
         'from': ctx.bot._config['connection']['nickname'],
