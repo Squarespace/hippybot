@@ -71,8 +71,10 @@ class HippyBot(JabberBot):
 
         self._lookup = Lookup(self)
 
-        self._at_name = u"@%s " % config['connection']['nickname'].replace(' ', '')
-        self._at_short_name = self._at_name.lower()
+        # To work in hipchat's actual chat rooms, the registered mention name
+        # must be used in all cases. That requires fetching the hipchat user object.
+        self._at_name = u"@%s " % self.bot_user().mention_name
+        self._at_short_name = self._at_name
 
         plugins = config.get('plugins', {}).get('load', [])
         if plugins:
