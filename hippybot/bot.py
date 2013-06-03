@@ -356,7 +356,7 @@ def control():
                 logargs[opt] = config.get('logging', opt)
     logging.basicConfig(**logargs)
 
-    runner = HippyDaemon(pid)
+    runner = HippyDaemon(pid, stdout=sys.stdout, stderr=sys.stderr)
 
     # if stop, don't bother requiring config
     if cmd == 'stop':
