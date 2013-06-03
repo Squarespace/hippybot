@@ -1,6 +1,7 @@
 from functools import wraps, update_wrapper
 from jabberbot import botcmd
 import re
+import logging
 
 def directcmd(func):
     @wraps(func)
@@ -37,23 +38,20 @@ def contentcmd(*args, **kwargs):
         return lambda func: decorate(func, **kwargs)
 
 
-def listen():
+
+def listen(fn):
     """Decorator for bot commentary that listens to all chatter"""
-    def _match(fn):
-        setattr(fn, '_jabberbot_content_command', True)
-        setattr(fn, '_jabberbot_command_name', fn.__name__)
-
-        @wraps(fn)
-        def __match(ctx, msg, *args, **kwargs):
-            if not msg or not msg.getBody() or ctx.bot.from_bot(msg):
-                return
-            else:
-                user = '@%s' % ctx.bot.get_sending_user(msg).mention_name
-                room_id = sending_room = ctx.bot.get_sending_room(msg_obj).room_id
-                return fn(ctx, user, msg.getBody(), room_id=room_id, **kwargs)
-        return update_wrapper(__match, fn)
-
-    return _match
+    setattr(fn, '_jabberbot_content_command', True)
+    setattr(fn, '_jabberbot_command_name', fn.__name__)
+    @wraps(fn)
+    def _listen(ctx, msg, *args, **kwargs):
+        if not msg or not msg.getBody() or ctx.bot.from_bot(msg):
+            return
+        else:
+            user = '@%s' % ctx.bot.get_sending_user(msg).mention_name
+            room_id = sending_room = ctx.bot.get_sending_room(msg).room_id
+            return fn(ctx, user, msg.getBody(), room_id=room_id, **kwargs)
+    return update_wrapper(_listen, fn)
 
 
 
