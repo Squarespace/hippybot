@@ -36,10 +36,8 @@ def do_import(name):
     return mod
 
 class HippyBot(JabberBot):
-    """An XMPP/Jabber bot with specific customisations for working with the
-    hipchat.com chatroom/IM service.
-    """
 
+    _timestamp = time.time()
     _content_commands = {}
     _global_commands = []
     _command_aliases = {}
@@ -182,11 +180,19 @@ class HippyBot(JabberBot):
         if ret:
             return ret
         for name in self._content_commands:
-            cmd = self._content_commands[name]
-            ret = cmd(mess)
-            if ret:
-                self.send_simple_reply(mess, ret)
-                return ret
+            try:
+                cmd = self._content_commands[name]
+                ret = cmd(mess)
+                if ret:
+                    self.send_simple_reply(mess, ret)
+                    return ret
+            except Exception as e:
+                self.log.exception(e)
+                logging.exception(e)
+                return 'Error processing cmd'
+
+    def up_time(self):
+        return time.time() - self._timestamp
 
     def join_room(self, room, username=None, password=None):
         """Overridden from JabberBot to provide history limiting.
@@ -230,10 +236,16 @@ class HippyBot(JabberBot):
         """
         for path in self._plugin_modules:
             name = path.split('.')[-1]
-            if name in self._plugins:
-                lazy_reload(self._plugins[name])
-            module = do_import(path)
-            self._plugins[name] = module
+            try:
+                if name in self._plugins:
+                    lazy_reload(self._plugins[name])
+                module = do_import(path)
+                self._plugins[name] = module
+            except Exception as e:
+                self.log.warn('Unable to load plugin: %s', name)
+                logging.warn('Unable to load plugin: %s', name)
+                logging.exception(e)
+                continue
 
             # If the module has a function matching the module/command name,
             # then just use that
